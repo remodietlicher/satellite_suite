@@ -74,11 +74,16 @@ def get_datetime(time):
 def get_timedelta(date, reftime):
     return np.array([(d-reftime).days for d in date])
 
+# parses the arguments for a satellite to model comparison
 def comp_parser():
     usage = """
+    usage: %(prog)s satname satvar modname modvar
+    e.g. : %(prog)s CERES-TOA.nc toa_lw_all_mon multi_annual_means.nc LW
     """
 
     description = """
+    Collocates the model and satellite grids and displays the difference
+    between the two fields.
     """
 
     ap = argparse.ArgumentParser(usage=usage, description=description)
@@ -87,5 +92,24 @@ def comp_parser():
     ap.add_argument('satvar', metavar='satvar', help='name of the variable: satellite')
     ap.add_argument('modname', metavar='modname', help='the file containing model data')
     ap.add_argument('modvar', metavar='modvar', help='name of the variable: model')
+
+    return ap
+
+# parses the arguments for an overview plot of 2D-Data.
+def mean_parser():
+    usage = """
+    usage: %(prog)s filename varname
+    e.g. : %(prog)s CERES-TOA.nc toa_lw_all_mon
+    """
+
+    description = """
+    Computes yearly means as well as the total mean of the dataset provided. From this
+    two plots are produced. Top: Yearly global means, Bottom: Dataset-mean lat-lon field
+    """
+
+    ap = argparse.ArgumentParser(usage=usage, description=description)
+    
+    ap.add_argument('filename', metavar='filename', help='the echam histogram file')
+    ap.add_argument('varname', metavar='varname', help='name of the variable')
 
     return ap

@@ -10,24 +10,10 @@ import cis
 
 from mpl_toolkits.basemap import Basemap, cm
 
-from satellite_utils import get_box_area, get_yearly_means, get_datetime, get_timedelta
+from satellite_utils import get_box_area, get_yearly_means, get_datetime, get_timedelta, mean_parser
 
 cmap = plt.cm.rainbow
 reftime = datetime(2000, 1, 1, 0, 0, 0)
-
-def arg_parser():
-    usage = """
-    """
-
-    description = """
-    """
-
-    ap = argparse.ArgumentParser(usage=usage, description=description)
-    
-    ap.add_argument('filename', metavar='filename', help='the echam histogram file')
-    ap.add_argument('varname', metavar='varname', help='name of the variable')
-
-    return ap
 
 def main(args):
     fig, ax = plt.subplots(ncols=1, nrows=3, gridspec_kw={"height_ratios":[1, 1, 0.1]}, figsize=(7, 10))
@@ -51,7 +37,7 @@ def main(args):
 
     var = np.average(var, axis=0)
 
-    ax[0].plot(dates_yearly, var_yearly_global, 'o')
+    ax[0].plot(dates_yearly, var_yearly_global)
 
     ax[1].set_title('Sum')
     m = Basemap(projection='cyl',llcrnrlat=-90,urcrnrlat=90, llcrnrlon=0,urcrnrlon=360,resolution='c', ax=ax[1])
@@ -66,6 +52,6 @@ def main(args):
     
 
 if __name__ == '__main__':
-    ap = arg_parser()
+    ap = mean_parser()
     args = ap.parse_args()
     main(args)

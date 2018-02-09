@@ -4,8 +4,9 @@ import matplotlib.pyplot as plt
 import matplotlib
 import numpy as np
 from datetime import datetime, timedelta
-from iris.cube import Cube
 import iris
+
+from sub_cubes import GOCCPCube, ECHAMCube
 
 import cis
 from satellite_utils import comp_parser
@@ -13,50 +14,36 @@ from satellite_utils import comp_parser
 def main(args):
     fig, ax = plt.subplots(ncols=1, nrows=5, gridspec_kw={"height_ratios":[1, 1, 0.1, 1, 0.1]}, figsize=(7, 12))
 
-    sdata = Dataset(args.satname, 'r')
-    mdata = Dataset(args.modname, 'r')
+    mcube = ECHAMCube(args.modname, args.modvar)
+    scube = GOCCPCube(args.satname, args.satvar)
 
-    print sdata.variables[args.satvar][:].shape
+    scube_intp = scube.regrid_onto(mcube)
+    svar_intp = scube_intp.data
+    mvar = mcube.data
+    diffvar = mvar - svar_intp
 
-    svar = np.nanmean(sdata.variables[args.satvar][:], axis=(0,3))
-    mvar = np.nanmean(mdata.variables[args.modvar][:], axis=(0,3))
+    satellite = np.nanmean(svar_intp, axis=2)
+    model = np.nanmean(mvar, axis=2)
+    diff = np.nanmean(diffvar, axis=2)
 
-    mod_grid = [('height', mdata.variables['height'][:]*0.001), ('latitude', mdata.variables['lat'][:])]
+    x, y = np.meshgrid(mcube.dims['latitude'], mcube.dims['height'])
 
-    sbounds = sdata.variables['alt_bound'][:]
-    scenters = 0.5*(sbounds[1]+sbounds[0])
-    sat_grid = [('height', scenters), ('latitude', sdata.variables['latitude'][:])]
-
-    slat_dim = iris.coords.DimCoord(sat_grid[1][1], standard_name=sat_grid[1][0], units='degree')
-    mlat_dim = iris.coords.DimCoord(mod_grid[1][1], standard_name=mod_grid[1][0], units='degree')
-
-    sheight_dim = iris.coords.DimCoord(sat_grid[0][1], standard_name=sat_grid[0][0], units='km')
-    mheight_dim = iris.coords.DimCoord(mod_grid[0][1], standard_name=mod_grid[0][0], units='km')
-
-    sat_cube = Cube(svar, units='1', dim_coords_and_dims=[(sheight_dim,0),(slat_dim,1)])
-    mod_cube = Cube(mvar, units='1', dim_coords_and_dims=[(mheight_dim,0),(mlat_dim,1)])
-
-    sat_cube_intp = iris.analysis.interpolate.linear(sat_cube, mod_grid)
-
-    x, y = np.meshgrid(mod_grid[1][1], mod_grid[0][1])
-
-    smax = np.max(sat_cube_intp.data)
-    mmax = np.max(mvar)
-    smin = np.min(sat_cube_intp.data)
-    mmin = np.min(mvar)
+    smax = np.max(satellite)
+    mmax = np.max(model)
+    smin = np.min(satellite)
+    mmin = np.min(model)
     maxvar = max(smax, mmax)
     minvar = min(smin, mmin)
 
     levels = np.linspace(minvar, maxvar, 10)
 
     ax[0].set_title('Satellite')
-    ax[0].contourf(x, y, sat_cube_intp.data, levels=levels)
+    ax[0].contourf(x, y, satellite, levels=levels)
     
     ax[1].set_title('Model')
-    c1 = ax[1].contourf(x, y, mvar, levels=levels)
+    c1 = ax[1].contourf(x, y, model, levels=levels)
 
     ax[3].set_title('Model - Satellite')
-    diff = mvar-sat_cube_intp.data
     maxdiff = np.max(np.abs(diff))
     levels = np.linspace(-maxdiff, maxdiff, 13)
     c2 = ax[3].contourf(x, y, diff, levels=levels)

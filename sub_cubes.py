@@ -5,18 +5,23 @@ import numpy as np
 import iris
 
 class NetCube(Cube):
-    def __init__(self, array, grid, units):
+    def __init__(self, array, grid, dim_units):
         self.grid = grid
+        self.dim_units = dim_units
         self.dims = {}
 
         dim_coords_and_dims = []
         for i in range(len(grid)):
             name, val = grid[i]
-            dim = iris.coords.DimCoord(val, standard_name=name, units=units[i])
+            dim = iris.coords.DimCoord(val, standard_name=name, units=dim_units[i])
             self.dims[name] = val
             dim_coords_and_dims.append((dim, i))
             
-        super(NetCube, self).__init__(array, units=units[-1], dim_coords_and_dims=dim_coords_and_dims)
+        super(NetCube, self).__init__(array, units=dim_units[-1], dim_coords_and_dims=dim_coords_and_dims)
+
+    def regrid_onto(self, other):
+        regridded = iris.analysis.interpolate.linear(self, other.grid)
+        return NetCube(regridded.data, other.grid, other.dim_units)
 
 class ECHAMCube(NetCube):
     def __init__(self, filename, varname):
@@ -31,12 +36,12 @@ class ECHAMCube(NetCube):
             
         if('height' in dims):
             grid = [('height', data.variables['height'][:]*0.001), ('latitude', data.variables['lat'][:]), ('longitude', data.variables['lon'][:])]
-            units = ['km', 'degree', 'degree', '1']
+            dim_units = ['km', 'degree', 'degree', '1']
         else:
             grid = [('latitude', data.variables['lat'][:]), ('longitude', data.variables['lon'][:])]
-            units = ['degree', 'degree', '1']
+            dim_units = ['degree', 'degree', '1']
 
-        super(ECHAMCube, self).__init__(array, grid, units)
+        super(ECHAMCube, self).__init__(array, grid, dim_units)
 
 class GOCCPCube(NetCube):
     def __init__(self, filename, varname):
@@ -47,11 +52,12 @@ class GOCCPCube(NetCube):
         bounds = data.variables['alt_bound'][:]
         centers = 0.5*(bounds[1]+bounds[0])
         grid = [('height', centers), ('latitude', data.variables['latitude'][:]), ('longitude', data.variables['longitude'][:])]
-        units = ['km', 'degree', 'degree', '1']
+        dim_units = ['km', 'degree', 'degree', '1']
         
-        super(GOCCPCube, self).__init__(array, grid, units)
+        super(GOCCPCube, self).__init__(array, grid, dim_units)
 
-        
+
+# ----------------------------- TESTING AREA ----------------------------
 def main():
     filename = 'model.nc'
     varname = 'aclcac'

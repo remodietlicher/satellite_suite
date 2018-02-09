@@ -19,6 +19,7 @@ class NetCube(Cube):
             
         super(NetCube, self).__init__(array, units=dim_units[-1], dim_coords_and_dims=dim_coords_and_dims)
 
+    # The native 'regrid' method does not support n-linear regridding
     def regrid_onto(self, other):
         regridded = iris.analysis.interpolate.linear(self, other.grid)
         return NetCube(regridded.data, other.grid, other.dim_units)
@@ -55,6 +56,15 @@ class GOCCPCube(NetCube):
         dim_units = ['km', 'degree', 'degree', '1']
         
         super(GOCCPCube, self).__init__(array, grid, dim_units)
+
+def cube_factory(filename, varname):
+    if('GOCCP' in filename):
+        return GOCCPCube(filename, varname)
+    elif('CERES' in filename):
+        return ECHAMCube(filename, varname)
+    else:
+        raise Exception("could not find a predefined Cube for your input: %s"%(filename))
+        return
 
 
 # ----------------------------- TESTING AREA ----------------------------

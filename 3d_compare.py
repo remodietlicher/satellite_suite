@@ -40,11 +40,20 @@ def main(args):
 
     x, y = np.meshgrid(mod_grid[1][1], mod_grid[0][1])
 
+    smax = np.max(sat_cube_intp.data)
+    mmax = np.max(mvar)
+    smin = np.min(sat_cube_intp.data)
+    mmin = np.min(mvar)
+    maxvar = max(smax, mmax)
+    minvar = min(smin, mmin)
+
+    levels = np.linspace(minvar, maxvar, 10)
+
     ax[0].set_title('Satellite')
-    ax[0].contourf(x, y, sat_cube_intp.data)
+    ax[0].contourf(x, y, sat_cube_intp.data, levels=levels)
     
     ax[1].set_title('Model')
-    c1 = ax[1].contourf(x, y, mvar)
+    c1 = ax[1].contourf(x, y, mvar, levels=levels)
 
     ax[3].set_title('Model - Satellite')
     diff = mvar-sat_cube_intp.data

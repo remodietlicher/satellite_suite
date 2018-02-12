@@ -8,7 +8,8 @@ import iris
 
 from mpl_toolkits.basemap import Basemap, cm
 
-cmap = plt.cm.rainbow
+cmap = plt.cm.bwr
+cmap2 = plt.cm.Reds
 
 from sub_cubes import GOCCPCube, ECHAMCube, cube_factory
 
@@ -18,15 +19,15 @@ from satellite_utils import comp_parser
 # For 2D data, plot on a lat-lon basemap
 def latlon_plot(x, y, sat, mod, diff, lsm, ld):
     fig, ax = plt.subplots(ncols=1, nrows=5, gridspec_kw={"height_ratios":[1, 1, 0.1, 1, 0.1]}, figsize=(7, 12))
-    ax[0].set_title('Model')
+    ax[0].set_title('Satellite')
     m = Basemap(projection='cyl',llcrnrlat=-90,urcrnrlat=90, llcrnrlon=0,urcrnrlon=360,resolution='c', ax=ax[0])
     m.drawcoastlines()
-    m.contourf(x, y, sat, shading='flat',cmap=cmap,latlon=True, levels=lsm)
+    m.contourf(x, y, sat, shading='flat',cmap=cmap2,latlon=True, levels=lsm)
     
-    ax[1].set_title('Satellite')
+    ax[1].set_title('Model')
     m = Basemap(projection='cyl',llcrnrlat=-90,urcrnrlat=90, llcrnrlon=0,urcrnrlon=360,resolution='c', ax=ax[1])
     m.drawcoastlines()
-    col = m.contourf(x, y, mod, shading='flat',cmap=cmap,latlon=True, levels=lsm)
+    col = m.contourf(x, y, mod, shading='flat',cmap=cmap2,latlon=True, levels=lsm)
 
     plt.colorbar(col, cax=ax[2], orientation='horizontal')
 
@@ -62,29 +63,32 @@ def main(args):
     mcube = ECHAMCube(args.modname, args.modvar)
     scube = cube_factory(args.satname, args.satvar)
 
-    scube_intp = scube.regrid_onto(mcube)
+    scube_intp = scube.interpolate(mcube.grid, iris.analysis.Linear())
     svar = scube_intp.data
     mvar = mcube.data
-    # right not unfortunately satellite data and model data have oppositely defined signes
+    # right now unfortunately satellite data and model data have oppositely defined signes
     if(np.sign(np.nanmean(svar)) != np.sign(np.nanmean(mvar))):
         svar = -svar
     dvar = mvar - svar
+
+    print 'Model mean:', mcube.field_mean()
+    print 'Satellite mean:', scube.field_mean()
 
     if('height' in mcube.dims.keys()):
         svar = np.nanmean(svar, axis=2)
         mvar = np.nanmean(mvar, axis=2)
         dvar = np.nanmean(dvar, axis=2)
 
-    smax = np.max(svar)
-    mmax = np.max(mvar)
-    smin = np.min(svar)
-    mmin = np.min(mvar)
+    smax = np.nanmax(svar)
+    mmax = np.nanmax(mvar)
+    smin = np.nanmin(svar)
+    mmin = np.nanmin(mvar)
     maxvar = max(smax, mmax)
     minvar = min(smin, mmin)
     levels = np.linspace(minvar, maxvar, 10)
 
-    maxdiff = np.max(np.abs(dvar))
-    dlevels = np.linspace(-maxdiff, maxdiff, 13)
+    maxdiff = np.nanmax(np.abs(dvar))
+    dlevels = np.linspace(-maxdiff, maxdiff, 20)
 
     lon = mcube.dims['longitude']
     lat = mcube.dims['latitude']

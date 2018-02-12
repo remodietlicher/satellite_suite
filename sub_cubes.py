@@ -19,10 +19,13 @@ class NetCube(Cube):
             
         super(NetCube, self).__init__(array, units=dim_units[-1], dim_coords_and_dims=dim_coords_and_dims)
 
-    # The native 'regrid' method does not support n-linear regridding
-    def regrid_onto(self, other):
-        regridded = iris.analysis.interpolate.linear(self, other.grid)
-        return NetCube(regridded.data, other.grid, other.dim_units)
+    def field_mean(self):
+        self.coord('latitude').guess_bounds()
+        self.coord('longitude').guess_bounds()
+        area = iris.analysis.cartography.area_weights(self)
+        mean = self.collapsed(['longitude', 'latitude'], iris.analysis.MEAN, weights=area)
+        return mean.data
+
 
 class ECHAMCube(NetCube):
     def __init__(self, filename, varname):
@@ -61,6 +64,8 @@ def cube_factory(filename, varname):
     if('GOCCP' in filename):
         return GOCCPCube(filename, varname)
     elif('CERES' in filename):
+        return ECHAMCube(filename, varname)
+    elif('maclwp' in filename):
         return ECHAMCube(filename, varname)
     else:
         raise Exception("could not find a predefined Cube for your input: %s"%(filename))

@@ -29,6 +29,8 @@ def latlon_plot(x, y, sat, mod, diff, lsm, ld):
     m.drawcoastlines()
     col = m.contourf(x, y, mod, shading='flat',cmap=cmap2,latlon=True, levels=lsm)
 
+    print np.min(mod), np.max(mod)
+
     plt.colorbar(col, cax=ax[2], orientation='horizontal')
 
     ax[3].set_title('Model - Satellite')
@@ -38,7 +40,7 @@ def latlon_plot(x, y, sat, mod, diff, lsm, ld):
     plt.colorbar(col, cax=ax[4], orientation='horizontal')
 
     plt.tight_layout()
-    plt.show()
+    return fig
 
 # For 3D data, plot on a lat-height projection, averaged over lons
 def latheight_plot(x, y, sat, mod, diff, lsm, ld):
@@ -57,7 +59,7 @@ def latheight_plot(x, y, sat, mod, diff, lsm, ld):
     plt.colorbar(c2, cax=ax[4], orientation='horizontal')
 
     plt.tight_layout()
-    plt.show()
+    return fig
 
 def main(args):
     mcube = ECHAMCube(args.modname, args.modvar)
@@ -70,9 +72,6 @@ def main(args):
     if(np.sign(np.nanmean(svar)) != np.sign(np.nanmean(mvar))):
         svar = -svar
     dvar = mvar - svar
-
-    print 'Model mean:', mcube.field_mean()
-    print 'Satellite mean:', scube.field_mean()
 
     if('height' in mcube.dims.keys()):
         svar = np.nanmean(svar, axis=2)
@@ -96,10 +95,16 @@ def main(args):
     if('height' in mcube.dims.keys()):
         height = mcube.dims['height']
         x, y = np.meshgrid(lat, height)
-        latheight_plot(x, y, svar, mvar, dvar, levels, dlevels)
+        fig = latheight_plot(x, y, svar, mvar, dvar, levels, dlevels)
     else:
         x, y = np.meshgrid(lon, lat)
-        latlon_plot(x, y, svar, mvar, dvar, levels, dlevels)
+        fig = latlon_plot(x, y, svar, mvar, dvar, levels, dlevels)
+
+    if(args.spath):
+        print 'saving figure to %s...'%(args.spath)
+        fig.savefig(args.spath)
+    else:
+        plt.show()
 
     return
 

@@ -6,7 +6,7 @@ import argparse
 r_earth = 6371000
 
 # provide meshed lon-lat grid
-def get_box_area(lon, lat):
+def get_box_area(lat, lon):
     # ceres data is on a 1x1 degree grid
     res_lat = 1
     res_lon = 1
@@ -39,7 +39,7 @@ def get_yearly_means(var, date):
     nyears = yearmax-yearmin+1
 
     if(nyears == len(years)):
-        print 'got yearly means already'
+        print('got yearly means already')
         dates = [datetime(y, 1, 1, 0, 0, 0) for y in years]
         means = var
         return means, dates
@@ -54,7 +54,6 @@ def get_yearly_means(var, date):
     means = np.zeros((nyears, nlon, nlat))
     for i,y in enumerate(np.arange(yearmin, yearmax+1)):
         idx = [j for j in range(len(years)) if years[j] == y]
-        print var[idx,:,:].shape
         means[i,:,:] = np.average(var[idx,:,:], axis=0)
         dates[i] = datetime(y, 1, 1, 0, 0, 0)
 
@@ -92,6 +91,7 @@ def comp_parser():
     ap.add_argument('satvar', metavar='satvar', help='name of the variable: satellite')
     ap.add_argument('modname', metavar='modname', help='the file containing model data')
     ap.add_argument('modvar', metavar='modvar', help='name of the variable: model')
+    ap.add_argument('--save', dest='spath', metavar='save path', help='Path to save the file to')
 
     return ap
 
@@ -111,5 +111,6 @@ def mean_parser():
     
     ap.add_argument('filename', metavar='filename', help='the echam histogram file')
     ap.add_argument('varname', metavar='varname', help='name of the variable')
+    ap.add_argument('--save', dest='spath', metavar='save path', help='Path to save the file to')
 
     return ap

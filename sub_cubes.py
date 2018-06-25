@@ -30,7 +30,12 @@ class NetCube(Cube):
 class ECHAMCube(NetCube):
     def __init__(self, filename, varname):
         data = Dataset(filename, 'r')
-        var = data.variables[varname]
+        try:
+            var = data.variables[varname]
+        except:
+            print("variable not found, choose one:")
+            print(data.variables.keys())
+            exit()
         dims = var.dimensions
 
         if('time' in dims):
@@ -39,9 +44,11 @@ class ECHAMCube(NetCube):
             array = var[:]
             
         if('height' in dims):
+            print('found height')
             grid = [('height', data.variables['height'][:]*0.001), ('latitude', data.variables['lat'][:]), ('longitude', data.variables['lon'][:])]
             dim_units = ['km', 'degree', 'degree', '1']
         else:
+            print('found no height')
             grid = [('latitude', data.variables['lat'][:]), ('longitude', data.variables['lon'][:])]
             dim_units = ['degree', 'degree', '1']
 
@@ -50,14 +57,25 @@ class ECHAMCube(NetCube):
 class GOCCPCube(NetCube):
     def __init__(self, filename, varname):
         data = Dataset(filename, 'r')
-        var = data.variables[varname]
+        try:
+            var = data.variables[varname]
+        except:
+            print("variable not found, choose one:")
+            print(data.variables.keys())
+            exit()
         array = np.nanmean(var[:], axis=0)
 
-        bounds = data.variables['alt_bound'][:]
-        centers = 0.5*(bounds[1]+bounds[0])
-        grid = [('height', centers), ('latitude', data.variables['latitude'][:]), ('longitude', data.variables['longitude'][:])]
-        dim_units = ['km', 'degree', 'degree', '1']
-        
+        if('alt_bound' in data.variables):
+            print('found height')
+            bounds = data.variables['alt_bound'][:]
+            centers = 0.5*(bounds[1]+bounds[0])
+            grid = [('height', centers), ('latitude', data.variables['latitude'][:]), ('longitude', data.variables['longitude'][:])]
+            dim_units = ['km', 'degree', 'degree', '1']
+        else:
+            print('found no height')
+            grid = [('latitude', data.variables['latitude'][:]), ('longitude', data.variables['longitude'][:])]
+            dim_units = ['degree', 'degree', '1']
+            
         super(GOCCPCube, self).__init__(array, grid, dim_units)
 
 def cube_factory(filename, varname):
